@@ -39,7 +39,7 @@ export class RestAPIStack extends cdk.Stack {
       }
     );
 
-    const newMovieReviewFn = new lambdanode.NodejsFunction(this, "addMovieReviewFn", {
+    const newMovieReviewFn = new lambdanode.NodejsFunction(this, "AddMovieReviewFn", {
       architecture: lambda.Architecture.ARM_64,
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: `${__dirname}/../lambda/functionality/addReviewToMovie.ts`,
@@ -50,6 +50,7 @@ export class RestAPIStack extends cdk.Stack {
         REGION: "eu-west-1",
       },
     });
+
     moviesReviewsTable.grantReadData(getMovieReviewsFn)
     moviesReviewsTable.grantReadWriteData(newMovieReviewFn)
 
