@@ -2,7 +2,6 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { UserPool } from "aws-cdk-lib/aws-cognito";
 import { AuthApi } from './auth-api'
-import {AppApi } from './app-api'
 export class AuthAppStack extends cdk.Stack {
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -26,11 +25,6 @@ export class AuthAppStack extends cdk.Stack {
 			userPoolId: userPoolId,
 			userPoolClientId: userPoolClientId,
 		});
-
-    new AppApi(this, 'AppApi', {
-			userPoolId: userPoolId,
-			userPoolClientId: userPoolClientId,
-		} );
 
   } 
 

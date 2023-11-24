@@ -8,10 +8,30 @@ import * as apig from "aws-cdk-lib/aws-apigateway";
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { generateBatch } from "../shared/util";
 import { movieReviews} from "../seed/movieReviews";
+import { UserPool } from "aws-cdk-lib/aws-cognito";
+import { AuthApi } from './auth-api'
 
 export class RestAPIStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    //Auth
+    const userPool = new UserPool(this, "UserPool", {
+      signInAliases: { username: true, email: true },
+      selfSignUpEnabled: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+    const userPoolId = userPool.userPoolId;
+
+    const appClient = userPool.addClient("AppClient", {
+      authFlows: { userPassword: true },
+    });
+
+    const userPoolClientId = appClient.userPoolClientId;
+
+
+
+
 
     // Tables 
     const moviesReviewsTable = new dynamodb.Table(this, "MovieReviewsTable", {
@@ -118,6 +138,11 @@ export class RestAPIStack extends cdk.Stack {
           "GET",
           new apig.LambdaIntegration(getMovieReviewByUserFn,{proxy: true})
         )
+
+        new AuthApi(this, 'AuthServiceApi', {
+			userPoolId: userPoolId,
+			userPoolClientId: userPoolClientId,
+		});
 
       }
 
