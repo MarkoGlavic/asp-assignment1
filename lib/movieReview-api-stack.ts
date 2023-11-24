@@ -39,8 +39,19 @@ export class RestAPIStack extends cdk.Stack {
       }
     );
 
+    const newMovieReviewFn = new lambdanode.NodejsFunction(this, "addMovieReviewFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: `${__dirname}/../lambda/functionality/addReviewToMovie.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: moviesReviewsTable.tableName,
+        REGION: "eu-west-1",
+      },
+    });
     moviesReviewsTable.grantReadData(getMovieReviewsFn)
-
+    moviesReviewsTable.grantReadWriteData(newMovieReviewFn)
 
         new custom.AwsCustomResource(this, "moviesddbInitData", {
           onCreate: {
@@ -81,6 +92,11 @@ export class RestAPIStack extends cdk.Stack {
           "GET",
           new apig.LambdaIntegration(getMovieReviewsFn, {proxy: true})
         )
+        const addReviewEndpoint = moviesEndpoint.addResource("reviews")
+        addReviewEndpoint.addMethod(
+          "POST",
+          new apig.LambdaIntegration(newMovieReviewFn, { proxy: true })
+        );  
 
 
       }
