@@ -1,52 +1,44 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand, QueryCommand, QueryCommandInput, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, UpdateCommand, UpdateCommandInput } from "@aws-sdk/lib-dynamodb";
 
 const ddbDocClient = createDDbDocClient();
 
 export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
   try {
     console.log("Event: ", event);
-    const parameters  = event?.pathParameters;
+    const parameters = event?.pathParameters;
     const movieId = parameters?.movieId ? parseInt(parameters.movieId) : undefined;
-    const queryParams = event.queryStringParameters;
-    const reviewerName = event?.queryStringParameters?.reviewerName;
     const body = event.body ? JSON.parse(event.body) : undefined;
+    const reviewerName = parameters?.reviewerName;
 
-    if (!movieId || !queryParams ) {
+    if (!movieId || !body || !reviewerName) {
       return {
-        statusCode: 404,
+        statusCode: 400,
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify({ Message: "Missing movie Id" }),
+        body: JSON.stringify({ Message: "Missing required parameters" }),
       };
     }
 
-    let commandInput: QueryCommandInput = {
-        TableName: "Reviews",
-      };
+    const { reviewDate, content, rating } = body;
 
-      if('reviewerName' in queryParams){
-        commandInput = {
-            ...commandInput,
-            KeyConditionExpression: "movieId = :m and begins_with(reviewerName, :r) ",
-            ExpressionAttributeValues: {
-              ":m": movieId,
-              ":r": queryParams.reviewerName,
-            },
-          };
-      }
+    const commandInput: UpdateCommandInput = {
+      TableName: "Reviews",
+      Key: {
+        movieId: movieId,
+        reviewerName: reviewerName,
+      },
+      UpdateExpression: "SET reviewDate = :rd, content = :c, rating = :r",
+      ExpressionAttributeValues: {
+        ":rd": reviewDate,
+        ":c": content,
+        ":r": rating,
+      },
+    };
 
-
-      const commandOutput = await ddbDocClient.send(
-        new PutCommand({
-          TableName: process.env.TABLE_NAME,
-          Item: body,
-        })
-      );
-
-
+    const commandOutput = await ddbDocClient.send(new UpdateCommand(commandInput));
 
     // Return Response
     return {
@@ -54,7 +46,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ Message: "Review Updated!" }),
     };
   } catch (error: any) {
     console.log(JSON.stringify(error));

@@ -21,15 +21,15 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
       };
     }
 
-    let commandInput: QueryCommandInput = {
-        TableName: "Reviews",
-        KeyConditionExpression: "movieId = :m",
-        FilterExpression: "reviewerName= :rn",
-        ExpressionAttributeValues: {
-          ":m": movieId,
-          ":rn": reviewerName,
-        },
-      };
+    const commandInput: QueryCommandInput = {
+      TableName: "Reviews",
+      KeyConditionExpression: "movieId = :m",
+      FilterExpression: "reviewerName = :rn",
+      ExpressionAttributeValues: {
+        ":m": movieId,
+        ":rn": reviewerName,
+      },
+    };
         
       const commandOutput = await ddbDocClient.send(
         new QueryCommand(commandInput)

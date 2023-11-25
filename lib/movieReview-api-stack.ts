@@ -61,7 +61,7 @@ export class RestAPIStack extends cdk.Stack {
     const moviesReviewsTable = new dynamodb.Table(this, "MovieReviewsTable", {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       partitionKey: { name: "movieId", type: dynamodb.AttributeType.NUMBER },
-      sortKey: { name: "reviewDate", type: dynamodb.AttributeType.STRING }, //cant have multiple reviews for same movie otherwise
+      sortKey: { name: "reviewerName", type: dynamodb.AttributeType.STRING }, //cant have multiple reviews for same movie otherwise
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       tableName: "Reviews",
     });
