@@ -20,7 +20,9 @@ type AppApiProps = {
 
 export class RestAPIStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: AppApiProps) {
-    super(scope, id);
+    super(scope, id, {
+      stackName: 'MyRestAPIStack'
+    });
 
     //Auth
     const appCommonFnProps = {
