@@ -10,25 +10,47 @@ import { generateBatch } from "../shared/util";
 import { movieReviews} from "../seed/movieReviews";
 import { UserPool } from "aws-cdk-lib/aws-cognito";
 import { AuthApi } from './auth-api'
+import * as node from "aws-cdk-lib/aws-lambda-nodejs";
+
+type AppApiProps = {
+  userPoolId: string;
+  userPoolClientId: string;
+};
+
 
 export class RestAPIStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
+  constructor(scope: Construct, id: string, props: AppApiProps) {
+    super(scope, id);
 
     //Auth
-    const userPool = new UserPool(this, "UserPool", {
-      signInAliases: { username: true, email: true },
-      selfSignUpEnabled: true,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    const appCommonFnProps = {
+      architecture: lambda.Architecture.ARM_64,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      handler: "handler",
+      environment: {
+        USER_POOL_ID: props.userPoolId,
+        CLIENT_ID: props.userPoolClientId,
+        REGION: cdk.Aws.REGION,
+      },
+    };
+
+
+    const authorizerFn = new node.NodejsFunction(this, "AuthorizerFn", {
+      ...appCommonFnProps,
+      entry: "./lambda/auth/authorizer.ts",
     });
-    const userPoolId = userPool.userPoolId;
 
-    const appClient = userPool.addClient("AppClient", {
-      authFlows: { userPassword: true },
-    });
-
-    const userPoolClientId = appClient.userPoolClientId;
-
+    const requestAuthorizer = new apig.RequestAuthorizer(
+      this,
+      "RequestAuthorizer",
+      {
+        identitySources: [apig.IdentitySource.header("cookie")],
+        handler: authorizerFn,
+        resultsCacheTtl: cdk.Duration.minutes(0),
+      }
+    );
 
 
 
@@ -104,19 +126,13 @@ export class RestAPIStack extends cdk.Stack {
           }),
         });
 
-        const api = new apig.RestApi(this, "RestAPI", {
-          description: "demo api",
-          deployOptions: {
-            stageName: "dev",
-          },
-          // 👇 enable CORS
-          defaultCorsPreflightOptions: {
-            allowHeaders: ["Content-Type", "X-Amz-Date"],
-            allowMethods: ["OPTIONS", "GET", "POST", "PUT", "PATCH", "DELETE"],
-            allowCredentials: true,
-            allowOrigins: ["*"],
-          },
-        });
+        const api = new apig.RestApi(this, "AppApi", {
+                description: "App RestApi",
+                endpointTypes: [apig.EndpointType.REGIONAL],
+                defaultCorsPreflightOptions: {
+                  allowOrigins: apig.Cors.ALL_ORIGINS,
+                },
+              });
 
         const moviesEndpoint = api.root.addResource("movies");
    
@@ -130,7 +146,11 @@ export class RestAPIStack extends cdk.Stack {
         const addReviewEndpoint = moviesEndpoint.addResource("reviews")
         addReviewEndpoint.addMethod(
           "POST",
-          new apig.LambdaIntegration(newMovieReviewFn, { proxy: true })
+          new apig.LambdaIntegration(newMovieReviewFn, { proxy: true }),
+          {
+          authorizer: requestAuthorizer,
+               authorizationType: apig.AuthorizationType.CUSTOM,
+          }
         );  
 
         const movieReviewByUserEndpoint = movieReviewsEndpoint.addResource("{reviewerName}");
@@ -139,18 +159,6 @@ export class RestAPIStack extends cdk.Stack {
           new apig.LambdaIntegration(getMovieReviewByUserFn,{proxy: true})
         )
 
-        new AuthApi(this, 'AuthServiceApi', {
-			userPoolId: userPoolId,
-			userPoolClientId: userPoolClientId,
-		});
-
-      }
-
-     
-
       
-      
-
-      
-    }
     
+        }}
