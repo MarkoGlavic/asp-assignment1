@@ -120,11 +120,24 @@ export class RestAPIStack extends cdk.Stack {
     });
 
 
+    const getMovieReviewsByUserFn = new lambdanode.NodejsFunction(this, "GetMovieReviews", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: `${__dirname}/../lambda/functionality/getMovieReviewsByUser.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: moviesReviewsTable.tableName,
+        REGION: "eu-west-1",
+      },
+    });
+
     moviesReviewsTable.grantReadData(getMovieReviewsFn)
     moviesReviewsTable.grantReadWriteData(newMovieReviewFn)
     moviesReviewsTable.grantReadData(getMovieReviewByUserFn)
     moviesReviewsTable.grantReadWriteData(updateMovieReviewFn)
-
+moviesReviewsTable.grantReadData(getMovieReviewsByUserFn
+  )
         new custom.AwsCustomResource(this, "moviesddbInitData", {
           onCreate: {
             service: "DynamoDB",
@@ -179,7 +192,15 @@ export class RestAPIStack extends cdk.Stack {
       
         const updateReviewEndpoint = movieReviewByUserEndpoint.addMethod(
           "PUT",
-          new apig.LambdaIntegration(updateMovieReviewFn, { proxy: true }),
+          new apig.LambdaIntegration(updateMovieReviewFn, { proxy: true }),   {
+            authorizer: requestAuthorizer,
+                 authorizationType: apig.AuthorizationType.CUSTOM,
+            }
         );  
-    
+       const getReviewsByUser = addReviewEndpoint.addResource("{reviewerName}")
+getReviewsByUser.addMethod(
+  "GET",
+  new apig.LambdaIntegration(getMovieReviewsByUserFn,{proxy: true})
+
+)    
         }}
