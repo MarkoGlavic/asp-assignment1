@@ -23,15 +23,15 @@ This repository contains the implementation of a serverless REST API for the AWS
 
 [Include screenshots from the AWS console (API Gateway service) that clearly show the deployed API ( have legible font size). ]
 
-![](./images/apis.png)
+![](./images/apis.PNG)
 
-![](./images/api2.png)
+![](./images/api2.PNG)
 
-![](./images/api1.png)
+![](./images/api1.PNG)
 
 ### Authentication..
 
-![](./images/userA.png)
+![](./images/userA.PNG)
 
 ### Independent learning (If relevant).
 
