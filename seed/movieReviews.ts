@@ -25,14 +25,14 @@ export const movieReviews : MovieReviews[] = [
       {
         movieId: 2345,
         reviewerName: 'Marko',
-        reviewDate: '2023-10-25',
+        reviewDate: '1980-10-25',
         content: "This moive is also amazing",
         rating: 5,
       },
       {
         movieId: 2345,
         reviewerName: 'User2',
-        reviewDate: '2023-10-22',
+        reviewDate: '2022-10-22',
         content: "Ye this movie is better",
         rating: 4,
       },
